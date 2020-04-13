@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>prototype - synchronize youtube players</title>
+</head>
+<body>
+
+
+        <script type="text/javascript" src="//www.google.com/jsapi"></script>
+        <script type="text/javascript" src="https://apis.google.com/js/client.js?onload=onJSClientLoad"></script>
+        <h1>demo : prototype - synchronize youtube players</h1>
+      	<p>Streamie - Watch videos with friends!</p>
+      	<div>
+          <div id="registration" class="active">
+            <p>Username: <input id="name" /> <button id="join" onclick="joinRoom()">Join Room</button></p>
+          </div>
+          <div id="room" class="inactive">
+            User: <span id="username"></span>
+            <button id="leave" onclick="leaveRoom()">Leave Room</button>
+            <p>Users: <span id="userCount"></span></p>
+            <p>Controller: <span id="controller"></span> <button id="takeControl" onclick="swapControl()">Take Control</button></p>
+          </div>
+        <hr></hr>
+        </div>
+      	<input type="text" id="video_url" style="width: 600px" placeholder="Paste your Youtube video's URL here..."/>
+      	<input type="button" id="btn_play" value="Play" onclick="changeURL()"/>
+      	<hr></hr>
+      	</div>
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <!-- HOSTED -->
+        <script>
+          // the players
+          var controllingPlayer;
+          var player1;
+          var player2;
+          var nonControllingPlayers = [];
+          var numUsers = 0;
+          // the rules
+          var syncThreshold=0.2; // seconds, threshold for an acceptable time difference to prevent non-stop syncing
+          var jumpThreshold=2; // seconds, threshold for a time difference that should be corrected by a rough jump
+          var jumpDeadTime=500; // milliseconds, a dead time in which we don't sync after a jump
+          var default_vid='M7lc1UVf-VE';
+          // timeouts and intervals
+          var timeSyncInterval;
+          var syncActionTimeout=undefined;
+
+          // The YouTube API calls this once it's ready
+          function onYouTubeIframeAPIReady() {
+            player1 = new YT.Player('somediv1', {
+              videoId: default_vid,
+              events: {
+                onReady: syncTime,
+                onStateChange: syncStateChange
+              }
+            });
+            player2 = new YT.Player('somediv2', {
+              videoId: default_vid,
+              onStateChange: syncStateChange
+            });
+          }
+
+          // the syncing magic
+          function syncTime(){
+            initializeController();
+
+            // making sure the syncing interval has not been set already for some reason
+            clearInterval(timeSyncInterval);
+            //for (var x = 0; x < nonControllingPlayers.length; x++) {
+            // setting a 1s interval in which we check it the players are in sync and correct in necessary
+            timeSyncInterval = setInterval(function () {
+              for (var x = 0; x < nonControllingPlayers.length; x++) {
+              // if the timeout is already set, we are already trying to sync the players, so we don't have to do it again
+              if(syncActionTimeout==undefined){
+                // measure the time difference and calculate the duration of the sync-action
+                var time1=controllingPlayer.getCurrentTime();
+                var time2=nonControllingPlayers[x].getCurrentTime();
+                var timeDifference=time2-time1;
+                var timeDifferenceAmount=Math.abs(timeDifference);
+                var syncActionDuration=1000*timeDifferenceAmount/2;
+
+                if(timeDifferenceAmount>jumpThreshold){
+                  // the players are too far apart, we have to jump
+                  console.log("Players are "+timeDifferenceAmount+" apart, Jumping.");
+                  nonControllingPlayers[x].seekTo(controllingPlayer.getCurrentTime());
+                  // we give the player a short moment to start the playback after the jump
+                  syncActionTimeout=setTimeout(function () {
+                    syncActionTimeout=undefined;
+                  },jumpDeadTime);
+                }else if(timeDifference>syncThreshold){
+                  // player 2 is a bit ahead of player 1, slowing player 2 down
+                  console.log("Player 2 is "+timeDifference+"s ahead of player 1. Syncing.");
+                  nonControllingPlayers[x].setPlaybackRate(0.5);
+                  // setting a timeout that fires precisely when both players are sync
+                  syncActionTimeout=setTimeout(function () {
+                    // the players should be sync now, so we can go back to normal speed
+                    nonControllingPlayers[x].setPlaybackRate(1);
+                    syncActionTimeout=undefined;
+                  },syncActionDuration);
+                }else if(timeDifference<-syncThreshold){
+                  console.log("Player 1 is "+(-timeDifference)+"s ahead of player 2. Syncing.");
+                  // player 1 is bit ahead of player 2, slowing player 2 down
+                  nonControllingPlayers[x].setPlaybackRate(2);
+                  // setting a timeout that fires precisely when both players are sync
+                  syncActionTimeout=setTimeout(function () {
+                    for (var i = 0; i < nonControllingPlayers.length; i++) {
+                      // the players should be sync now, so we can go back to normal speed   
+                      nonControllingPlayers[i].setPlaybackRate(1);
+                      // undefining the timeout to indicate that we're done syncing
+                      syncActionTimeout=undefined;
+                    }
+                  },syncActionDuration);
+                }
+              }}
+            },1000);
+          }
+
+          function initializeController() {
+            if (nonControllingPlayers.length == 0 && !controllingPlayer) {
+              controllingPlayer = player1;
+              nonControllingPlayers.push(player2);
+            }
+          }
+
+          // a little helper to deal with the user
+        function syncStateChange(e) {
+          if (controllingPlayer == e.target) {
+           for (var i = 0; i < nonControllingPlayers.length; i++) {
+              var volume = controllingPlayer.getVolume();
+              var isMuted = controllingPlayer.isMuted();
+              isMuted ? nonControllingPlayers[i].mute() : nonControllingPlayers[i].unMute();
+              nonControllingPlayers[i].setVolume(volume);
+              if (e.data==YT.PlayerState.PLAYING) {
+                nonControllingPlayers[i].seekTo(controllingPlayer.getCurrentTime());
+                nonControllingPlayers[i].playVideo();
+              } else if(e.data==YT.PlayerState.PAUSED) {
+                nonControllingPlayers[i].seekTo(controllingPlayer.getCurrentTime());
+                nonControllingPlayers[i].pauseVideo();
+              }
+            }
+          }
+        }
+
+        function swapControl() {
+          var temp = controllingPlayer;
+          var swapped = nonControllingPlayers[0];
+          controllingPlayer = nonControllingPlayers[0];
+          nonControllingPlayers = nonControllingPlayers.filter(player => player != swapped);
+          nonControllingPlayers.push(temp);
+          syncTime();
+        }
+
+          function leaveRoom() {
+            document.getElementById("nonControlTxt").className = "inactive";
+            document.getElementById("somediv2").className = "inactive";
+            document.getElementById("room").className = "inactive";
+            document.getElementById("registration").className = "active";
+            userCount = document.getElementById("userCount");
+            numUsers--;
+            userCount.innerHTML = numUsers;
+          }
+
+          function joinRoom() {
+            document.getElementById("nonControlTxt").className = "active";
+            document.getElementById("somediv2").className = "active";
+            document.getElementById("room").className = "active";
+            var username = document.getElementById("username");
+            username.innerHTML = document.getElementById("name").value;
+            userCount = document.getElementById("userCount");
+            numUsers++;
+            userCount.innerHTML = numUsers;
+            document.getElementById("registration").className = "inactive";
+          }
+
+          function changeURL() {
+            var fullURL=document.getElementById("video_url").value;
+            var video_id = fullURL.split('v=')[1];
+            var ampersandPosition = video_id.indexOf('&');
+            if(ampersandPosition != -1) {
+              video_id = video_id.substring(0, ampersandPosition);
+            }
+            controllingPlayer.loadVideoById(video_id);
+            controllingPlayer.playVideo();
+            for (var i = 0; i < nonControllingPlayers.length; i++) {
+              nonControllingPlayers[i].loadVideoById(video_id);
+              nonControllingPlayers[i].playVideo();
+            }
+          }
+
+          // copies URL to share
+      function getURL() {
+        var URL = window.location.href;
+        const el = document.createElement('textarea');
+        el.value = URL;
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        el.hidden = true;
+      }
+
+      // copies YouTube URL to clipboard
+      function getYoutubeURL() {
+        var endURL = controllingPlayer.getVideoData().video_id;
+        var fullURL = `https://www.youtube.com/watch?v=${endURL}`;
+        const el = document.createElement('textarea');
+        el.value = fullURL;
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        el.hidden = true;
+      }
+
+</script>
+<p>Controlling Player:</p>
+<div id="somediv1"></div>
+<hr></hr>
+<p id="nonControlTxt" class="inactive">Non-controlling Viewer:</p>
+<div id="somediv2" class="inactive"></div>
+</body>
+<div class="btn_copy">
+  <table style="width: 50%;">
+    <tr>
+      <th>
+      <input type="image" id="btn_copy" src="../assets/clipboard.png" value="Shareable link" onclick="getURL()"/>
+      <p>Streamie Link</p>
+    </th>
+    <th>
+      <input type="image" id="btn_copy" src="../assets/clipboard.png" value="Shareable link" onclick="getYoutubeURL()"/>
+      <p>YouTube Link</p>
+    </th>
+  </tr>
+  </tr>
+  </table>
+</div>
+<style>
+  .inactive { display: none; }
+  .active { display: block; }
+</style>
+</html>

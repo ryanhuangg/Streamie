@@ -1,0 +1,5 @@
+Retrospective meeting for Sprint 3:
+The release planning meeting was conducted on March 4th, 2020. The meeting was held over Discord voice chat.
+All members (Pengcheng Xu, Zhengliang Ding, Yan Chen Huang, Kai Jie Zhou, Wei Cong Qian, Angel Mei) participated in the meeting.
+
+For this sprint, we tried incorporating the good practices from last sprint that we discussed. We found having more frequent meetings for this project more useful since it (as expected) improved communication between team members. For the next sprint, we were planning to meet in person to work together on the project. However, due to the current situation at UofT with the cancellation of classes, that seems less likely. It may be possible to work together through a discord call but that remains to be discussed. The end of this sprint was also quite hectic, as the situation with the coronavirus cancelling classes rapidly developed throughout the last days of the sprint. We hope to get back on track for next sprint and we would have to conduct meetings remotely for the rest of the semester.

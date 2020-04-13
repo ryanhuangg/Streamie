@@ -1,0 +1,91 @@
+
+<!DOCTYPE html>
+<html>
+  <body>
+	Streamie - Watch videos with friends!
+	<div>
+	<input type="text" id="video_url" style="width: 600px" placeholder="Paste your Youtube video's URL here..."/>
+	<input type="button" id="btn_play" value="Play" onclick="changeURL()"/>
+	<hr></hr>
+	</div>
+    <div id="player"></div>
+  <div class="btn_copy">
+    <input type="image" id="btn_copy" src="assets/clipboard.png" value="Shareable link" onclick="getURL()"/>
+  </div>
+
+    <script>
+      var tag = document.createElement('script');
+
+      tag.src = "https://www.youtube.com/iframe_api";
+      var firstScriptTag = document.getElementsByTagName('script')[0];
+      firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+      
+       //Soem useful Reference: https://developers.google.com/youtube/v3/live/code_samples
+       //https://developers.google.com/youtube/v3/live/getting-started
+
+      // Creates the player, has more adjustable properties and events
+      var player;
+      function onYouTubeIframeAPIReady() {
+        player = new YT.Player('player', {
+          height: '390',
+          width: '640',
+          videoId: 'M7lc1UVf-VE',
+          events: {
+            'onReady': onPlayerReady,
+            'onStateChange': onPlayerStateChange
+          }
+        });
+      }
+
+      // copies URL to share
+      function getURL() {
+        // var endURL = player.getVideoData().video_id; UNCOMMENT TO SHOW VIDEO URL LINKING
+        // var fullURL = `https://www.youtube.com/watch?v=${endURL}`;
+        var URL = window.location.href;
+        const el = document.createElement('textarea');
+        el.value = URL;
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        el.hidden = true;
+      }
+
+      // Function called when the video is initialized, can be modified
+      function onPlayerReady(event) {
+        event.target.playVideo();
+      }
+
+      // Function called onClick to switch and parse the video URL
+      function changeURL() {
+        var fullURL=document.getElementById("video_url").value;
+        var video_id = fullURL.split('v=')[1];
+        var ampersandPosition = video_id.indexOf('&');
+        if(ampersandPosition != -1) {
+          video_id = video_id.substring(0, ampersandPosition);
+        }
+        player.loadVideoById(video_id);
+        player.playVideo();
+      }
+
+      //    The function indicates that when playing a video (state=1),
+      //    the player should play for six seconds and then stop.
+      var done = false;
+      
+      function onPlayerStateChange(event) {
+        if (event.data == YT.PlayerState.PLAYING && !done) {
+	  //	Commenting out temporarily for letting video play without early end.
+	  /*	
+          setTimeout(stopVideo, 6000);
+          done = true;
+	  */
+        }
+      }
+
+
+      function stopVideo() {
+        player.stopVideo();
+      }
+      
+      </script>
+	</body>
+</html>

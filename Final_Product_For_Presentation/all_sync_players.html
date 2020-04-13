@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html>
+    <head>
+      <link rel="stylesheet" href="sync.css">
+      <title class="title">Streamie - All Synced</title>
+        <style>
+        h {
+          font-family: verdana;
+          font-size: 25px;
+        }
+        p {
+          font-family: verdana;
+          font-size: 13px;
+        }
+        span {
+          font-family: verdana;
+          font-size: 13px;
+        }
+        input[type=button] {
+          background-color: gray;
+          border:  2px solid white;
+          color: white;
+          padding: 8px 16px;
+          text-decoration: none;
+          margin: 3px 1.5px;
+          cursor: pointer;
+        }
+        </style>
+    </head>
+    <body>
+        <script type="text/javascript" src="//www.google.com/jsapi"></script>
+        <script type="text/javascript" src="https://apis.google.com/js/client.js?onload=onJSClientLoad"></script>
+        <script type='text/javascript' src='https://cdn.scaledrone.com/scaledrone.min.js'></script>
+        <script src="https://www.youtube.com/iframe_api"></script>
+        <h1>Streamie - Watch videos with friends!</h1>
+        <form action="./Login_page/login.html">
+          <input type="submit" id="btn_logoff" value="Log Off">
+        </form>
+        <div>
+        <input type="text" id="video_url" style="width: 600px" placeholder="Paste your Youtube video's URL here..."/>
+        <input type="button" id="btn_play" value="Play" onclick="changeURL()"/>
+        <input type="button" id="btn_play" value="Take Control" onclick="takeControl()"/>
+        <form action="./sync_master.html">
+          <input type="submit" class="switchModeBtn" value="Lock Mode (Controller)">
+        </form>
+        <form action="./sync_viewer.html">
+          <input type="submit" class="switchModeBtn" value="Lock Mode (Viewer)">
+        </form>
+        <hr></hr>
+        </div>
+        <div class="state">
+            <span class="users">No user detected...</span>
+            <p></p>
+            <span class="vid">You are not watching anyone's stream now. First, paste your invite link to the textbox above, then click Join Stream to join one's stream.</span>
+        </div>
+
+        <table style="width: 100%;">
+          <tr>
+            <th>
+        <div class="chatContainer">
+          <div id="videomaster"></div>
+          <p id="con">Controlling Status: Idling and Not Controlling Anything...</p>
+          <p id="demo"></p>
+        </th>
+        <th>
+        </body>
+          <div class="members-count">-</div>
+          <div class="members-list">-</div>
+          <div class="messages"></div>
+          <form class="message-form" onsubmit="return false;">
+            <input class="message-form__input" placeholder="Type a message.." type="text"/>
+            <input class="message-form__button" value="Send" type="submit"/>
+          </form>
+          </th>
+        </tr>
+      </tr>
+    </table>
+    <div class="btn_copy">
+      <table style="width: 100%;">
+        <tr>
+          <th>
+          <input type="image" src="../assets/clipboard.png" value="Shareable link" onclick="getURL()"/>
+          <p>Streamie Link</p>
+        </th>
+        <th>
+          <input type="image" src="../assets/clipboard.png" value="Shareable link" onclick="getYoutubeURL()"/>
+          <p>YouTube Link</p>
+        </th>
+      </tr>
+      </tr>
+    </table>
+  </div>
+        <script>
+            var users = document.querySelector('.users'),
+                vid = document.querySelector('.vid'),
+                //if test in local
+                //websocket = new WebSocket("ws://127.0.0.1:60001/");
+
+                //if connect to server
+                websocket = new WebSocket("ws://edwinz.myqnapcloud.com:6688/");
+
+                //if connect in server in local
+                //websocket = new WebSocket("ws://192.168.2.88:6688/");
+
+             var syncThreshold=0.15; // seconds, threshold for an acceptable time difference to prevent non-stop syncing
+             var jumpThreshold=2; // seconds, threshold for a time difference that should be corrected by a rough jump
+             var jumpDeadTime=500; // milliseconds, a dead time in which we don't sync after a jump
+             var default_vid='222';  //giving a defualted video id01viCoGdsmI;M7lc1UVf-VE
+
+              // timeouts and intervals
+             var timeSyncInterval;
+             var syncActionTimeout=undefined;
+             var playerid="M7lc1UVf-VE";
+            //---------------------------------------
+            //---------------------------------------
+
+            websocket.onmessage = function (event) {
+                data = JSON.parse(event.data);
+                switch (data.type) {
+                    case 'users':
+                        users.textContent = (
+                          "Currently " + data.count.toString() + " user" +
+                          (data.count == 1 ? "" : "(s)") + " in party");
+                        break;
+                    case 'masterPLAYING':
+                        masterplayer.playVideo();
+                        break;
+                    case 'masterPAUSED':
+                        masterplayer.pauseVideo();
+                        break;
+                    case 'url':
+                        vid.textContent = (
+                        "Currently playing:"+data.videoid.toString());
+                        masterplayer.loadVideoById(data.videoid);
+                        break;
+                    case 'seektomillis':
+                        document.getElementById("demo").innerHTML = "Syncing to master's progress: " + data.millis + " seconds of this video...";
+                        document.getElementById("con").innerHTML = "Controlling Status: Watching and Not Controlling Anything...";
+                        if (Math.abs(data.millis - masterplayer.getCurrentTime()) > 1){
+                            masterplayer.seekTo(data.millis);
+                        }
+                            break;
+                    case 'controller':
+                        document.getElementById("con").innerHTML = "You are Controlling the progress of this video...";
+                    default:
+                        console.error(
+                            "unsupported event", data);
+                }
+            }
+            //---------------------------------------------------
+            function onYouTubeIframeAPIReady() {
+              masterplayer = new YT.Player('videomaster', {
+                videoId: 'Bey4XXJAqS8',
+                events: {
+                  onReady: syncTime,
+                  onStateChange: syncStateChange
+                }
+              });
+            }
+
+            function syncStateChange(e){
+              if(e.data==YT.PlayerState.PLAYING){
+                websocket.send(JSON.stringify({action: 'masterPLAYING'}));
+              }else if(e.data==YT.PlayerState.PAUSED){
+                websocket.send(JSON.stringify({action: 'masterPAUSED'}));
+              }
+            }
+
+            function synctime(){
+                setTimeout(() => {
+                  var time_master=masterplayer.getCurrentTime();
+                  websocket.send(JSON.stringify({action: 'mcurtime'+time_master}));
+                }, 3000);
+            }
+
+            function changeURL() {
+              var fullURL=document.getElementById("video_url").value;
+              var video_id = fullURL.split('v=')[1];
+              var ampersandPosition = video_id.indexOf('&');
+              if(ampersandPosition != -1) {
+                video_id = video_id.substring(0, ampersandPosition);
+              }
+              vid.textContent = ("Currently playing:"+video_id.toString());
+              masterplayer.loadVideoById(video_id);
+              websocket.send(JSON.stringify({action: "url"+video_id}));
+            }
+
+            function takeControl() {
+              websocket.send(JSON.stringify({action: "controlling"}));
+            }
+
+            function syncTime(){
+              // clear var timeSyncInterval
+              clearInterval(timeSyncInterval);
+              // setting a 1s interval in which we check it the players are in sync and correct in necessary
+              timeSyncInterval = setInterval(function () {
+                // check if timeout is set, if not => set it
+                if(syncActionTimeout==undefined){
+                  syncActionTimeout = 1;
+                  var time_master=masterplayer.getCurrentTime();
+                  websocket.send(JSON.stringify({action: 'mcurtime'+time_master}));
+                  document.getElementById("demo").innerHTML = ("Current progress: " + time_master + " seconds, sending to server...");
+                  syncActionTimeout = undefined;
+                }
+              },5000);
+            }
+
+            // copies URL to share
+          function getURL() {
+            var URL = window.location.href;
+            const el = document.createElement('textarea');
+            el.value = URL;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            el.hidden = true;
+          }
+
+          // copies YouTube URL to clipboard
+          function getYoutubeURL() {
+            var endURL = masterplayer.getVideoData().video_id;
+            var fullURL = `https://www.youtube.com/watch?v=${endURL}`;
+            const el = document.createElement('textarea');
+            el.value = fullURL;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            el.hidden = true;
+          }
+
+          // BELOW IS SCALEDRONE CODE
+            const CLIENT_ID = '4cNswoNqM2wVFHPg';
+
+const drone = new ScaleDrone(CLIENT_ID, {
+  data: { // Will be sent out as clientData via events
+    name: getRandomName(),
+    color: getRandomColor(),
+  },
+});
+
+let members = [];
+
+drone.on('open', error => {
+  if (error) {
+    return console.error(error);
+  }
+  console.log('Successfully connected to Scaledrone');
+
+  const room = drone.subscribe('observable-room');
+  room.on('open', error => {
+    if (error) {
+      return console.error(error);
+    }
+    console.log('Successfully joined room');
+  });
+
+  room.on('members', m => {
+    members = m;
+    updateMembersDOM();
+  });
+
+  room.on('member_join', member => {
+    members.push(member);
+    updateMembersDOM();
+  });
+
+  room.on('member_leave', ({id}) => {
+    const index = members.findIndex(member => member.id === id);
+    members.splice(index, 1);
+    updateMembersDOM();
+  });
+
+  room.on('data', (text, member) => {
+    if (member) {
+      addMessageToListDOM(text, member);
+    } else {
+      // Message is from server
+    }
+  });
+});
+
+drone.on('close', event => {
+  console.log('Connection was closed', event);
+});
+
+drone.on('error', error => {
+  console.error(error);
+});
+
+function getRandomName() {
+  const adjs = ["autumn", "hidden", "bitter", "misty", "silent", "empty", "dry", "dark", "summer", "icy", "delicate", "quiet", "white", "cool", "spring", "winter", "patient", "twilight", "dawn", "crimson", "wispy", "weathered", "blue", "billowing", "broken", "cold", "damp", "falling", "frosty", "green", "long", "late", "lingering", "bold", "little", "morning", "muddy", "old", "red", "rough", "still", "small", "sparkling", "throbbing", "shy", "wandering", "withered", "wild", "black", "young", "holy", "solitary", "fragrant", "aged", "snowy", "proud", "floral", "restless", "divine", "polished", "ancient", "purple", "lively", "nameless"];
+  const nouns = ["waterfall", "river", "breeze", "moon", "rain", "wind", "sea", "morning", "snow", "lake", "sunset", "pine", "shadow", "leaf", "dawn", "glitter", "forest", "hill", "cloud", "meadow", "sun", "glade", "bird", "brook", "butterfly", "bush", "dew", "dust", "field", "fire", "flower", "firefly", "feather", "grass", "haze", "mountain", "night", "pond", "darkness", "snowflake", "silence", "sound", "sky", "shape", "surf", "thunder", "violet", "water", "wildflower", "wave", "water", "resonance", "sun", "wood", "dream", "cherry", "tree", "fog", "frost", "voice", "paper", "frog", "smoke", "star"];
+  return (
+    adjs[Math.floor(Math.random() * adjs.length)] +
+    "_" +
+    nouns[Math.floor(Math.random() * nouns.length)]
+  );
+}
+
+function getRandomColor() {
+  return '#' + Math.floor(Math.random() * 0xFFFFFF).toString(16);
+}
+
+//------------- DOM STUFF
+
+const DOM = {
+  membersCount: document.querySelector('.members-count'),
+  membersList: document.querySelector('.members-list'),
+  messages: document.querySelector('.messages'),
+  input: document.querySelector('.message-form__input'),
+  form: document.querySelector('.message-form'),
+};
+
+DOM.form.addEventListener('submit', sendMessage);
+
+function sendMessage() {
+  const value = DOM.input.value;
+  if (value === '') {
+    return;
+  }
+  DOM.input.value = '';
+  drone.publish({
+    room: 'observable-room',
+    message: value,
+  });
+}
+
+function createMemberElement(member) {
+  const { name, color } = member.clientData;
+  const el = document.createElement('div');
+  el.appendChild(document.createTextNode(name));
+  el.className = 'member';
+  el.style.color = color;
+  return el;
+}
+
+function updateMembersDOM() {
+  DOM.membersCount.innerText = `${members.length} users in room:`;
+  DOM.membersList.innerHTML = '';
+  members.forEach(member =>
+    DOM.membersList.appendChild(createMemberElement(member))
+  );
+}
+
+function createMessageElement(text, member) {
+  const el = document.createElement('div');
+  el.appendChild(createMemberElement(member));
+  el.appendChild(document.createTextNode(text));
+  el.className = 'message';
+  return el;
+}
+
+function addMessageToListDOM(text, member) {
+  const el = DOM.messages;
+  const wasTop = el.scrollTop === el.scrollHeight - el.clientHeight;
+  el.appendChild(createMessageElement(text, member));
+  if (wasTop) {
+    el.scrollTop = el.scrollHeight - el.clientHeight;
+  }
+}
+
+        </script>
+    </body>
+</html>

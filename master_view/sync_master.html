@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Streamie - Master</title>
+        <style>
+          h {
+            font-family: verdana;
+            font-size: 25px;
+          }
+          p {
+            font-family: verdana;
+            font-size: 13px;
+          }
+          span {
+            font-family: verdana;
+            font-size: 13px;
+          }
+          input[type=button] {
+            background-color: gray;
+            border:  2px solid white;
+            color: white;
+            padding: 8px 16px;
+            text-decoration: none;
+            margin: 3px 1.5px;
+            cursor: pointer;
+          }
+          .button {
+            background-color: #4CAF50; /* Green */
+            border: none;
+            color: white;
+            padding: 16px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            transition-duration: 0.4s;
+            cursor: pointer;
+          }
+          .buttonblack {
+            background-color: white;
+            color: black;
+            border: 2px solid #555555;
+          }
+
+          .buttonblack:hover {
+            background-color: #555555;
+            color: white;
+          }
+        </style>
+    </head>
+    <body>
+        <script type="text/javascript" src="//www.google.com/jsapi"></script>
+        <script type="text/javascript" src="https://apis.google.com/js/client.js?onload=onJSClientLoad"></script>
+        <script src="https://www.youtube.com/iframe_api"></script>
+        <h>Streamie - Watch videos with friends!</h>
+
+        <div>
+        <input type="text" id="video_url" style="width: 600px" placeholder="Paste your Youtube video's URL here..."/>
+        <input type="button" id="btn_play" value="Play" onclick="changeURL()"/>
+        <input type="button" id="btn_host" value="Start Hosting" onclick="startHosting()"/>
+        <hr></hr>
+        </div>
+
+        <div class="state">
+            <span class="users">No user is watching the stream</span>
+        </div>
+        <p id="video_displaying">You are not streaming any video now. First, click Start Hosting, then paste your Youtube link to above textbox and click Play to start video sharing.</div>
+
+        <div id="videomaster"></div>
+        <p id="demo"></p>
+
+        <script>
+            var users = document.querySelector('.users'),
+                vid = document.querySelector('.vid'),
+                //if test in local
+                //websocket = new WebSocket("ws://127.0.0.1:60001/");
+
+                //if connect to server
+                websocket = new WebSocket("ws://edwinz.myqnapcloud.com:6699/");
+
+                //if connect in server in local
+                //websocket = new WebSocket("ws://192.168.2.88:6699/");
+
+             var syncThreshold=0.15; // seconds, threshold for an acceptable time difference to prevent non-stop syncing
+             var jumpThreshold=2; // seconds, threshold for a time difference that should be corrected by a rough jump
+             var jumpDeadTime=500; // milliseconds, a dead time in which we don't sync after a jump
+             var default_vid='M7lc1UVf-VE';  //giving a defualted video id01viCoGdsmI;M7lc1UVf-VE
+
+              // timeouts and intervals
+             var timeSyncInterval;
+             var syncActionTimeout=undefined;
+             var playerid="master";
+             //*UID
+             var uid="333";
+
+            //---------------------------------------
+            //---------------------------------------
+
+            websocket.onmessage = function (event) {
+                data = JSON.parse(event.data);
+                switch (data.type) {
+                    case 'users':
+                        users.textContent = (
+                            "Currently "+data.count.toString() + " user" +
+                            (data.count == 1 ? "" : "(s)") + " in party");
+                        break;
+                    default:
+                        console.error(
+                            "unsupported event", data);
+                }
+            }
+            //---------------------------------------------------
+            function onYouTubeIframeAPIReady() {
+              masterplayer = new YT.Player('videomaster', {
+                videoId: 000, //giving illgeal videoId to make sure client doesn't initialze with any video
+                events: {
+                  onReady: syncTime,
+                  onStateChange: syncStateChange
+                }
+              });
+            }
+
+
+
+            function syncStateChange(e){
+              if(e.data==YT.PlayerState.PLAYING){
+                websocket.send(JSON.stringify({action: 'masterPLAYING'}));
+              }else if(e.data==YT.PlayerState.PAUSED){
+                websocket.send(JSON.stringify({action: 'masterPAUSED'}));
+              }
+            }
+
+            function changeURL() {
+              var fullURL=document.getElementById("video_url").value;
+              var video_id = fullURL.split('v=')[1];
+              var ampersandPosition = video_id.indexOf('&');
+              if(ampersandPosition != -1) {
+                video_id = video_id.substring(0, ampersandPosition);
+              }
+              websocket.send(JSON.stringify({action: "url"+video_id}));
+              masterplayer.loadVideoById(video_id);
+              document.getElementById("video_displaying").innerHTML = ("Currently streaming Youtube video(ID): "+video_id);
+            }
+
+            function startHosting() {
+              websocket.send(JSON.stringify({action: "muid"+uid}));
+              var buttonId = this.id;
+              document.getElementById("buttonId").disabled = true;
+            }
+
+            function synctime(){
+
+                setTimeout(() => {
+                  var time_master=masterplayer.getCurrentTime();
+                  websocket.send(JSON.stringify({action: 'mcurtime'+time_master}));
+                }, 2000);
+
+            }
+
+            function syncTime(){
+              // clear var timeSyncInterval
+              clearInterval(timeSyncInterval);
+              // setting a 1s interval in which we check it the players are in sync and correct in necessary
+              timeSyncInterval = setInterval(function () {
+                // check if timeout is set, if not => set it
+                if(syncActionTimeout==undefined){
+                  syncActionTimeout = 1;
+                  var time_master=masterplayer.getCurrentTime();
+                  websocket.send(JSON.stringify({action: 'mcurtime'+time_master}));
+                  document.getElementById("demo").innerHTML = ("Current progress: " + time_master + " seconds, sending to server...");
+                  syncActionTimeout = undefined;
+                }
+              },5000);
+            }
+
+
+        </script>
+    </body>
+</html>

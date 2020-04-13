@@ -1,0 +1,91 @@
+body {
+    margin: 0;
+    font-family: Arial;
+  }
+  
+.header {
+    margin: 0;
+    background-color: #a7e9af;
+    padding: 10px;
+    text-align: center;
+}
+
+.nav {
+    overflow: hidden;
+    background-color: #222222;
+  }
+  
+  /* Style the topnav links */
+  .nav a {
+    float: right;
+    display: block;
+    color: #f2f2f2;
+    text-align: center;
+    padding: 14px 16px;
+    text-decoration: none;
+  }
+  
+  /* Change color on hover */
+  .nav a:hover {
+    transition: all 0.4s ease 0s;
+    background-color: #a7e9af;
+    color: black;
+  }
+
+  .nav a:active {
+    background: #ffffff;
+  }
+
+
+.status {
+    overflow: hidden;
+    padding: 14px 16px;
+}
+
+.btn_sub{
+    background-color: #c4302b;
+  color: #ffffff;
+  padding: 1em 1.5em;
+  margin: 0;
+  padding: 30px 50px 30px 50px;
+  text-decoration: none;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  -ms-transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%);
+  
+    }
+    .btn_sub:hover {
+        background-color:#c20202;
+        transition: all 0.4s ease 0s;
+    }
+
+    .btn_sub:active{
+        background-color: #ed0202;
+        color:#000000;
+    }
+
+.btn_sub1 {
+    background-color: #c4302b;
+  color: #ffffff;
+  padding: 1em 1.5em;
+  margin: 0;
+  padding: 30px 50px 30px 50px;
+  text-decoration: none;
+  position: absolute;
+  top: 60%;
+  left: 50%;
+  -ms-transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%);
+  
+    }
+    .btn_sub1:hover {
+        background-color:#c20202;
+        transition: all 0.4s ease 0s;
+    }
+
+    .btn_sub1:active{
+        background-color: #ed0202;
+        color:#000000;
+    }

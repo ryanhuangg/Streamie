@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Streamie - Viewer</title>
+        <style>
+        h {
+          font-family: verdana;
+          font-size: 25px;
+        }
+        p {
+          font-family: verdana;
+          font-size: 13px;
+        }
+        span {
+          font-family: verdana;
+          font-size: 13px;
+        }
+        input[type=button] {
+          background-color: gray;
+          border:  2px solid white;
+          color: white;
+          padding: 8px 16px;
+          text-decoration: none;
+          margin: 3px 1.5px;
+          cursor: pointer;
+        }
+        </style>
+    </head>
+
+    <body>
+        <script type="text/javascript" src="//www.google.com/jsapi"></script>
+        <script type="text/javascript" src="https://apis.google.com/js/client.js?onload=onJSClientLoad"></script>
+        <script src="https://www.youtube.com/iframe_api"></script>
+        <h>Streamie - Watch videos with friends!</h>
+
+        <div>
+        <input type="text" id="video_url" style="width: 600px" placeholder="Paste your invite link here..."/>
+        <input type="button" id="btn_play" value="Join Stream" onclick="changeURL()"/>
+        <hr></hr>
+        </div>
+
+        <div class="state">
+            <span class="users">No user detected...</span>
+            <p></p>
+            <span class="vid">You are not watching anyone's stream now. First, paste your invite link to the textbox above, then click Join Stream to join one's stream.</span>
+        </div>
+
+        <div id="videoviewer"></div>
+        <p id="demo"></p>
+
+        <script>
+             var users = document.querySelector('.users'),
+                 vid = document.querySelector('.vid'),
+                 //if test in local
+                //websocket = new WebSocket("ws://127.0.0.1:60001/");
+
+                //if connect to server
+                websocket = new WebSocket("ws://edwinz.myqnapcloud.com:6699/");
+
+                //if connect in server in local
+                //websocket = new WebSocket("ws://192.168.2.88:6699/");
+
+
+             var syncThreshold=0.15; // seconds, threshold for an acceptable time difference to prevent non-stop syncing
+             var jumpThreshold=2; // seconds, threshold for a time difference that should be corrected by a rough jump
+             var jumpDeadTime=500; // milliseconds, a dead time in which we don't sync after a jump
+             var default_vid='M7lc1UVf-VE';  //giving a defualted video id01viCoGdsmI;M7lc1UVf-VE
+              // timeouts and intervals
+             var timeSyncInterval;
+             var syncActionTimeout=undefined;
+             var playerid="viewer";
+             //*UID
+             var uid = "222";
+
+            //---------------------------------------
+            //---------------------------------------
+
+            websocket.onmessage = function (event) {
+                data = JSON.parse(event.data);
+                switch (data.type) {
+                    case 'users':
+                        users.textContent = (
+                            "Currently " + data.count.toString() + " user" +
+                            (data.count == 1 ? "" : "(s)") + " in party");
+                        break;
+                    case 'masterPLAYING':
+                        viewerplayer.playVideo();
+                        break;
+                    case 'masterPAUSED':
+                        viewerplayer.pauseVideo();
+                        break;
+                    case 'url':
+                        vid.textContent = (
+                            "Currently Viewing a Master's stream, playing Youtube video(ID): " + data.videoid.toString() );
+                        viewerplayer.loadVideoById(data.videoid);
+                        break;
+                    case 'seektomillis':
+                    document.getElementById("demo").innerHTML = "Syncing to master's progress: " + data.millis + " seconds of this video...";
+                    if (Math.abs(data.millis - viewerplayer.getCurrentTime()) > 1){
+                        viewerplayer.seekTo(data.millis);
+                    }
+                        break;
+                    default:
+                        console.error(
+                            "unsupported event", data);
+                }
+            }
+            //---------------------------------------------------
+            function onYouTubeIframeAPIReady() {
+              viewerplayer = new YT.Player('videoviewer', {
+                videoId: 000,
+                playerVars: {'controls': 1, 'disablekb': 1 },
+                events: {
+                  onReady: synctime,
+                  onStateChange: syncStateChange
+                }
+              });
+            }
+
+            function synctime(){
+
+                setTimeout(() => {
+                  var time_master=viewerplayer.getCurrentTime();
+                  //websocket.send(JSON.stringify({action: 'vcurtime'+time_master}));
+                }, 5000);
+
+            }
+
+            function syncStateChange(e){
+              if(e.data==YT.PlayerState.PLAYING){
+                //websocket.send(JSON.stringify({action: 'viewerPLAYING'}));
+              }else if(e.data==YT.PlayerState.PAUSED){
+                //websocket.send(JSON.stringify({action: 'viewerPAUSED'}));
+              }
+            }
+
+            function changeURL() {
+              websocket.send(JSON.stringify({action: "vruid"+uid}));
+            }
+
+
+
+        </script>
+    </body>
+</html>

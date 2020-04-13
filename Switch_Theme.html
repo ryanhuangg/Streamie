@@ -1,0 +1,41 @@
+<!DOCTYPE HTML>
+<html lang="en">
+    <head>
+        <title>
+            Switch Theme Demo
+        </title>
+    </head>
+    <body style="text-align:center">
+        <h1 style="color:black">
+            Switch Theme by clicking
+        </h1>
+        <p id = "text_up" style = 
+            "font-size: 16px; font-weight: bold;">      
+        </p> 
+        <input type="button" onclick="Run()" id="myButton1" value="Dark Mode" >
+        </input>
+        <script>
+            var text_up = document.getElementById("text_up");
+            function changeColor(color) { 
+                document.body.style.background = color; 
+            }
+            function Run() { 
+                var elem = document.getElementById("myButton1");
+                if (elem.value=="Dark Mode"){ 
+                    changeColor('grey');
+                    elem.value = "Bright Mode";
+                }
+                else{
+                    changeColor('white');
+                    elem.value = "Dark Mode";
+                }
+                
+                text_up.innerHTML = "Background Color changed, click again to swith back"; 
+            }
+        
+        </script>
+
+
+    </body>
+
+</html>

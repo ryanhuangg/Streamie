@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>synchronizing youtube video players demo</title>
+
+    </head>
+    <body>
+        <script type="text/javascript" src="//www.google.com/jsapi"></script>
+        <script type="text/javascript" src="https://apis.google.com/js/client.js?onload=onJSClientLoad"></script>
+        <script src="https://www.youtube.com/iframe_api"></script>
+        <h>Streamie - Watch videos with friends!</h>
+        <div>
+        <input type="text" id="video_url" style="width: 600px" placeholder="Paste your Youtube video's URL here..."/>
+        <input type="button" id="btn_play" value="Play" onclick="changeURL()"/>
+        <hr></hr>
+        </div>
+        <div class="state">
+            <span class="users">?</span>
+            <p></p>
+            <span class="vid">?</span>
+        </div>
+
+        <p>video streaming...</p>
+        <div id="videomaster"></div>
+        <script>
+            var users = document.querySelector('.users'),
+                vid = document.querySelector('.vid'),
+                websocket = new WebSocket("ws://127.0.0.1:6789/");
+
+             var syncThreshold=0.15; // seconds, threshold for an acceptable time difference to prevent non-stop syncing
+             var jumpThreshold=2; // seconds, threshold for a time difference that should be corrected by a rough jump
+             var jumpDeadTime=500; // milliseconds, a dead time in which we don't sync after a jump
+             var default_vid='M7lc1UVf-VE';  //giving a defualted video id01viCoGdsmI;M7lc1UVf-VE
+
+              // timeouts and intervals
+             var timeSyncInterval;
+             var syncActionTimeout=undefined;
+             var playerid="master";
+            //---------------------------------------
+            //---------------------------------------
+
+            websocket.onmessage = function (event) {
+                data = JSON.parse(event.data);
+                switch (data.type) {
+                    case 'users':
+                        users.textContent = (
+                            "Currently "+data.count.toString() + " user" +
+                            (data.count == 1 ? "" : "s online"));
+                        break;
+                    case 'masterPLAYING':
+                        masterplayer.playVideo();
+                        break;
+                    case 'masterPAUSED':
+                        masterplayer.pauseVideo();
+                        break;
+                    case 'url':
+                        vid.textContent = (
+                        "Currently playing:"+data.videoid.toString());
+                        masterplayer.loadVideoById(data.videoid);
+                        masterplayer.playVideo();
+                        break;
+                    default:
+                        console.error(
+                            "unsupported event", data);
+                }
+            }
+            //---------------------------------------------------
+            function onYouTubeIframeAPIReady() {
+              masterplayer = new YT.Player('videomaster', {
+                videoId: default_vid,
+                events: {
+                  //onReady: syncTime,
+                  onStateChange: syncStateChange
+                }
+              });
+            }
+
+
+
+            function syncStateChange(e){
+              if(e.data==YT.PlayerState.PLAYING){
+                websocket.send(JSON.stringify({action: 'masterPLAYING'}));
+              }else if(e.data==YT.PlayerState.PAUSED){
+                websocket.send(JSON.stringify({action: 'masterPAUSED'}));
+              }
+            }
+
+            function changeURL() {
+              var fullURL=document.getElementById("video_url").value;
+              var video_id = fullURL.split('v=')[1];
+              var ampersandPosition = video_id.indexOf('&');
+              if(ampersandPosition != -1) {
+                video_id = video_id.substring(0, ampersandPosition);
+              }
+              websocket.send(JSON.stringify({action: "url"+video_id}));
+            }
+
+        </script>
+    </body>
+</html>

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>UserProfile</title>
+</head>
+
+<body>
+    <div class="outer">
+        <div class="middle">
+            <div class="inner">
+                <div class="register">
+
+                    <h1>User Profile</h1>
+
+                    <div style="text-align:center;">
+                        <form method="POST" action="UserProfile.php">
+                            <table>
+                                <!-- Trick below to re-fill the user form field -->
+                                <!-- dropdown -->
+                                <tr>
+                                    <th><label for="title">Your title</label></th>
+                                    <td>
+                                        <select name="title">
+										<option value="---">---</option>
+                                        <option value="Mr">Mr</option>
+                                        <option value="Miss">Miss</option>
+                                    
+                                        <option value="Prince">Prince</option>
+                                        <option value="Princess">Princess</option>
+                                        <option value="King">King</option>
+                                        <option value="Queen">Queen</option>
+                    </select>
+
+                                        <td>
+                                </tr>
+
+                                <!-- </form> -->
+
+                                <tr>
+                                    <th><label for="gender">Gender</label></th>
+                                    <td>
+                                        <input type="radio" name="gender" value="Male"> Male
+                                        <input type="radio" name="gender" value="Female"> Female
+                                        <input type="radio" name="gender" value="Other"> Other <br>
+                                        <input type="radio" name="gender" value="Monster"> Monster <br>
+                                        <input type="radio" name="gender" value="Elf"> Elf <br>
+
+
+                                        <td>
+                                </tr>
+
+                                <td>
+                                    </tr>
+                                    <tr>
+                                        <th><label for="name">*Your Full Name</label></th>
+                                        <td>
+                                            <input type="text" name="name" placeholder="Username" /></td>
+                                    </tr>
+
+                                    <tr>
+                                        <th><label for="new_password">Password</label></th>
+                                        <td>
+                                            <input type="password" name="new_password" placeholder="Password" /></td>
+                                    </tr>
+
+                                    <tr>
+                                        <th><label for="confirm_password">Confirm Password</label></th>
+                                        <td>
+                                            <input type="password" name="confirm_password" placeholder="Password" /></td>
+                                    </tr>
+
+
+
+                            </table>
+                            <tr>
+                                <th>
+                                    <input type="submit" name="register" value="update" />
+                                </th>
+                            </tr>
+                        </form>
+
+
+                        <tr>
+                            <th>
+
+                                <a href="homepage.php"> <input type="submit" name="back" value="back" />
+                                </a>
+                            </th>
+                        </tr>
+
+                    </div>
+                    <li>
+                        Please Fill In the Information Need To Be Change!
+                    </li>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+
+</html>

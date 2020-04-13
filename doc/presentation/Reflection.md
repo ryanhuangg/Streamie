@@ -1,0 +1,11 @@
+During the development of our project, we worked as an Agile team and followed the strategy of Scrum to manage our project's development during the semester.
+
+Our project is called Streamie, and it's mainly about synchronizing a Youtube video's playing progress to one's friends, so everyone who's using Streamie with their friends can watch the same video at the same progress. To achieve this goal, we used Html, Javascript, PHP, and Python to develop our product. 
+
+During the development, we've worked together, and everyone has their own work to do. And as we are using the MicroService pattern, it becomes much easier for us to integrate each other's work to one finished/whole product.
+
+The most useful convention tools for us are online communication tools, for example, Discord, Wechat, and Teams. We used all three during the semester. We used WeChat for daily communications which brings us together as a close team. We used Discard for the online meetings(including sprint planning meetings, sprint retrospective meetings, and more...). This platform became extremely helpful since everyone starts to work at home because of the COVID-19 situation. Finally, we used Teams for the official standups.
+
+As to things that didn't work well for us, we had some difficulties following exactly what is instructed in lectures about Scrum. For example, during the development, in some sprints, we didn't have enough standups communication on Teams. This happened, as we didn't know enough about Scrum at the moment( like how often team members should make standups during the sprint), and we rushed to start developing the product. But now, it's different. As during the semester, everyone in the team learns more about not only Agile Developing but also the software engineering process in general.
+
+In the future, if we could continue our project, we think we would still follow the Scrum strategy. And before our project continues, we would make sure every team member will learn and understand about Agile development. So we would make fewer mistakes. Then during the development, we would follow the strategy closely to do the planning, developing, testing, and reviewing in each sprint correctly and timely.
